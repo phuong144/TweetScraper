@@ -42,7 +42,18 @@ def scrape(words, numtweet):
     )
 
     # Returns dict
-    tweets = client.search_recent_tweets(query=words, max_results=numtweet).data
+    tweets = client.search_recent_tweets(
+        query=words,
+        expansions=["author_id", "geo.place_id"],
+        tweet_fields=[
+            "context_annotations",
+            "created_at",
+            "public_metrics",
+        ],
+        user_fields=["description", "location"],
+        place_fields=["country", "name", "country_code"],
+        max_results=numtweet,
+    ).data
 
     """
     # We are using .Cursor() to search
@@ -118,21 +129,10 @@ def scrape(words, numtweet):
 
 if __name__ == "__main__":
 
-    consumer_key = os.getenv("apiKey")
-    consumer_secret = os.getenv("apiSecret")
-    access_key = os.getenv("accessKey")
-    access_secret = os.getenv("accessSecret")
-    """
-    client = tweepy.Client(
-        consumer_key=consumer_key,
-        consumer_secret=consumer_secret,
-        access_token=access_key,
-        access_token_secret=access_secret,
-    )
-    """
+    # search_recent api only allows OAuth2.0 Bearer Token (App-Only)
     client = tweepy.Client(os.getenv("bearerToken"))
 
-    """ Twitter API v1.1
+    """ Twitter API v1.1 User Context
     auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
     auth.set_access_token(access_key, access_secret)
     api = tweepy.API(auth)
