@@ -27,6 +27,7 @@ def printtweetdata(n, ith_tweet):
 def scrape(words, numtweet):
 
     # Creating DataFrame using pandas
+    """
     db = pd.DataFrame(
         columns=[
             "username",
@@ -40,11 +41,12 @@ def scrape(words, numtweet):
             "hashtags",
         ]
     )
+    """
 
     # Returns dict
     tweets = client.search_recent_tweets(
         query=words,
-        expansions=["author_id", "geo.place_id"],
+        expansions=["author_id","geo.place_id"],
         tweet_fields=[
             "context_annotations",
             "created_at",
@@ -79,7 +81,7 @@ def scrape(words, numtweet):
 
     # Counter to maintain Tweet Count
     i = 1
-
+    """
     # https://developer.twitter.com/en/docs/twitter-api/fields
     for tweet in list_tweets:
         username = tweet.user.screen_name
@@ -116,7 +118,7 @@ def scrape(words, numtweet):
             text,
             hashtext,
         ]
-        db.loc[len(db)] = ith_tweet
+        # db.loc[len(db)] = ith_tweet
 
         # Function call to print tweet data on screen
         # printtweetdata(i, ith_tweet)
@@ -124,8 +126,8 @@ def scrape(words, numtweet):
     filename = "scraped_tweets.csv"
 
     # we will save our database as a CSV file.
-    db.to_csv(filename)
-
+    # db.to_csv(filename)
+    """
 
 if __name__ == "__main__":
 
