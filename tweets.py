@@ -27,107 +27,80 @@ def printtweetdata(n, ith_tweet):
 def scrape(words, numtweet):
 
     # Creating DataFrame using pandas
-    """
+
     db = pd.DataFrame(
         columns=[
             "username",
             "description",
-            "location",
-            "following",
-            "followers",
-            "totaltweets",
-            "retweetcount",
+            "user_location",
+            "created_at",
             "text",
-            "hashtags",
+            "like_count",
+            "tweet_location",
+            "tweet_country",
+            "tweet_place_type",
         ]
     )
-    """
 
-    # Returns dict
-    tweets = client.search_recent_tweets(
+    # classtweepy.Response(data, includes, errors, meta)
+    # type(res.data) = <class 'list'>
+    res = client.search_recent_tweets(
         query=words,
-        expansions=["author_id","geo.place_id"],
+        expansions=["author_id", "geo.place_id"],
         tweet_fields=[
             "context_annotations",
             "created_at",
             "public_metrics",
         ],
         user_fields=["description", "location"],
-        place_fields=["country", "name", "country_code"],
+        place_fields=["country", "name", "country_code", "place_type"],
         max_results=numtweet,
-    ).data
-
-    """
-    # We are using .Cursor() to search
-    # through twitter for the required tweets.
-    # The number of tweets can be
-    # restricted using .items(number of tweets)
-    tweets = tweepy.Cursor(
-        client.search_recent_tweets,
-        words,
-        lang="en",
-        since_id=date_since,
-        tweet_mode="extended",
-    ).items(numtweet)
-
-    # .Cursor() returns an iterable object. Each item in
-    # the iterator has various attributes
-    # that you can access to
-    # get information about each tweet
-    list_tweets = [tweet for tweet in tweets]
-    """
-
-    list_tweets = [tweet for tweet in tweets]
-
+    )
     # Counter to maintain Tweet Count
     i = 1
     """
     # https://developer.twitter.com/en/docs/twitter-api/fields
-    for tweet in list_tweets:
-        username = tweet.user.screen_name
-        description = tweet.user.description
-        location = tweet.user.location
-        following = tweet.user.friends_count
-        followers = tweet.user.followers_count
-        totaltweets = tweet.user.statuses_count
-        retweetcount = tweet.retweet_count
-        hashtags = tweet.entities["hashtags"]
+    for i in range(len(res.data)):
+        text = res.data[i].text
+        created_at = res.data[i].created_at
+        username = res.includes["users"][i].username
+        description = res.includes["users"][i].description
+        user_location = res.includes["users"][i].location
+
+        like_count = res.data[i].public_metrics.like_count
+
+        tweet_location = res.includes.places[i].full_name
+        tweet_country = res.includes.places[i].country
+        tweet_place_type = res.includes.places[i].place_type
 
         # Retweets can be distinguished by
         # a retweeted_status attribute,
         # in case it is an invalid reference,
         # except block will be executed
-        try:
-            text = tweet.retweeted_status.full_text
-        except AttributeError:
-            text = tweet.full_text
-        hashtext = list()
-        for j in range(0, len(hashtags)):
-            hashtext.append(hashtags[j]["text"])
 
         # Here we are appending all the
         # extracted information in the DataFrame
         ith_tweet = [
             username,
             description,
-            location,
-            following,
-            followers,
-            totaltweets,
-            retweetcount,
+            user_location,
+            created_at,
             text,
-            hashtext,
+            like_count,
+            tweet_location,
+            tweet_country,
+            tweet_place_type,
         ]
-        # db.loc[len(db)] = ith_tweet
-
+        db.loc[len(db)] = ith_tweet
         # Function call to print tweet data on screen
         # printtweetdata(i, ith_tweet)
         i = i + 1
     filename = "scraped_tweets.csv"
 
     # we will save our database as a CSV file.
-    # db.to_csv(filename)
+    db.to_csv(filename)
     """
+
 
 if __name__ == "__main__":
 
