@@ -56,22 +56,44 @@ def scrape(words, numtweet):
         place_fields=["country", "name", "country_code", "place_type"],
         max_results=numtweet,
     )
-    # Counter to maintain Tweet Count
-    i = 1
+
+    print(len(res.data), len(res.includes["users"]))
     """
+    print(
+        res.data[64].text,
+        res.data[64].created_at,
+        res.data[64].id,
+        res.data[64].author_id,
+    )
+    """
+
+    """
+    data list and user list were 100 to 64
+    meant some posts didnt have users - retweets
+    removed retweets in query, now ratio is 100 - 24 ???
+
+    Some tweet objects do have a place, so cant assume i to index tweet, user, and place
+    """
+
     # https://developer.twitter.com/en/docs/twitter-api/fields
-    for i in range(len(res.data)):
+    for i in range(len(res.includes["users"])):
         text = res.data[i].text
         created_at = res.data[i].created_at
         username = res.includes["users"][i].username
         description = res.includes["users"][i].description
         user_location = res.includes["users"][i].location
 
-        like_count = res.data[i].public_metrics.like_count
+        like_count = res.data[i].public_metrics["like_count"]
 
-        tweet_location = res.includes.places[i].full_name
-        tweet_country = res.includes.places[i].country
-        tweet_place_type = res.includes.places[i].place_type
+        tweet_location = "None"
+        tweet_country = "None"
+        tweet_place_type = "None"
+
+        if "places" in res.includes:
+            print("have places")
+            tweet_location = res.includes["places"][i].full_name
+            tweet_country = res.includes["places"][i].country
+            tweet_place_type = res.includes["places"][i].place_type
 
         # Retweets can be distinguished by
         # a retweeted_status attribute,
@@ -91,15 +113,14 @@ def scrape(words, numtweet):
             tweet_country,
             tweet_place_type,
         ]
+
         db.loc[len(db)] = ith_tweet
         # Function call to print tweet data on screen
         # printtweetdata(i, ith_tweet)
-        i = i + 1
-    filename = "scraped_tweets.csv"
+    filename = "scraped_tweets2.csv"
 
     # we will save our database as a CSV file.
     db.to_csv(filename)
-    """
 
 
 if __name__ == "__main__":
@@ -118,8 +139,9 @@ if __name__ == "__main__":
     words = input()
     # print("Enter Date since The Tweets are required in yyyy-mm--dd")
     # date_since = input()
-
+    words += " -is:retweet"
+    print(words)
     # number of tweets you want to extract in one run
-    numtweet = 10
+    numtweet = 100
     scrape(words, numtweet)
     print("Scraping has completed!")
