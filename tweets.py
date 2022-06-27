@@ -11,17 +11,14 @@ import tweepy
 # function to display data of each tweet
 def printtweetdata(n, ith_tweet):
     print()
-    print(f"Tweet {n}:")
-    print(f"Username:{ith_tweet[0]}")
-    print(f"Description:{ith_tweet[1]}")
-    print(f"Location:{ith_tweet[2]}")
-    print(f"Following Count:{ith_tweet[3]}")
-    print(f"Follower Count:{ith_tweet[4]}")
-    print(f"Total Tweets:{ith_tweet[5]}")
-    print(f"Retweet Count:{ith_tweet[6]}")
-    print(f"Tweet Text:{ith_tweet[7]}")
-    print(f"Hashtags Used:{ith_tweet[8]}")
-
+    print(f"UID {ith_tweet[0]}:")
+    print(f"Username:{ith_tweet[1]}")
+    print(f"Description:{ith_tweet[2]}")
+    print(f"User_location:{ith_tweet[3]}")
+    print(f"Created At:{ith_tweet[4]}")
+    print(f"Text:{ith_tweet[5]}")
+    print(f"Like_Count:{ith_tweet[6]}")
+    print(f"Tweet_Location:{ith_tweet[7]}")
 
 # function to perform data extraction
 def scrape(words, numtweet):
@@ -30,6 +27,7 @@ def scrape(words, numtweet):
 
     db = pd.DataFrame(
         columns=[
+            "uid",
             "username",
             "description",
             "user_location",
@@ -42,13 +40,10 @@ def scrape(words, numtweet):
         ]
     )
 
-    # classtweepy.Response(data, includes, errors, meta)
-    # type(res.data) = <class 'list'>
     res = client.search_recent_tweets(
         query=words,
         expansions=["author_id", "geo.place_id"],
         tweet_fields=[
-            "context_annotations",
             "created_at",
             "public_metrics",
         ],
@@ -58,30 +53,26 @@ def scrape(words, numtweet):
     )
 
     print(len(res.data), len(res.includes["users"]))
-    """
-    print(
-        res.data[64].text,
-        res.data[64].created_at,
-        res.data[64].id,
-        res.data[64].author_id,
-    )
-    """
 
-    """
-    data list and user list were 100 to 64
-    meant some posts didnt have users - retweets
-    removed retweets in query, now ratio is 100 - 24 ???
+    userDict = {}
+    for user in res.includes["users"]:
+        userDict[user.id] = user
 
-    Some tweet objects do have a place, so cant assume i to index tweet, user, and place
-    """
+    placesDict = {}
+    if "places" in res.includes:
+        for place in res.includes["places"]:
+            placesDict[place.id] = place
+    
 
     # https://developer.twitter.com/en/docs/twitter-api/fields
-    for i in range(len(res.includes["users"])):
+    for i in range(len(res.data)):
+        uid = res.data[i].author_id
         text = res.data[i].text
         created_at = res.data[i].created_at
-        username = res.includes["users"][i].username
-        description = res.includes["users"][i].description
-        user_location = res.includes["users"][i].location
+
+        username = userDict[res.data[i].author_id].username
+        description = userDict[res.data[i].author_id].description
+        user_location = userDict[res.data[i].author_id].location
 
         like_count = res.data[i].public_metrics["like_count"]
 
@@ -89,20 +80,13 @@ def scrape(words, numtweet):
         tweet_country = "None"
         tweet_place_type = "None"
 
-        if "places" in res.includes:
-            print("have places")
-            tweet_location = res.includes["places"][i].full_name
-            tweet_country = res.includes["places"][i].country
-            tweet_place_type = res.includes["places"][i].place_type
+        if "geo" in res.data[i]:
+            tweet_location = placesDict[res.data[i]['geo'].place_id].full_name
+            tweet_country = placesDict[res.data[i]['geo'].place_id].country
+            tweet_place_type = placesDict[res.data[i]['geo'].place_id].place_type
 
-        # Retweets can be distinguished by
-        # a retweeted_status attribute,
-        # in case it is an invalid reference,
-        # except block will be executed
-
-        # Here we are appending all the
-        # extracted information in the DataFrame
         ith_tweet = [
+            uid,
             username,
             description,
             user_location,
@@ -116,31 +100,26 @@ def scrape(words, numtweet):
 
         db.loc[len(db)] = ith_tweet
         # Function call to print tweet data on screen
-        # printtweetdata(i, ith_tweet)
-    filename = "scraped_tweets2.csv"
+        printtweetdata(i, ith_tweet)
+    filename = "scraped_tweets.csv"
 
     # we will save our database as a CSV file.
-    db.to_csv(filename)
-
+    # db.to_csv(filename)
 
 if __name__ == "__main__":
 
     # search_recent api only allows OAuth2.0 Bearer Token (App-Only)
     client = tweepy.Client(os.getenv("bearerToken"))
 
-    """ Twitter API v1.1 User Context
-    auth = tweepy.OAuthHandler(consumer_key, consumer_secret)
-    auth.set_access_token(access_key, access_secret)
-    api = tweepy.API(auth)
-    """
-
     # Enter Hashtag and initial date
     print("Enter Twitter HashTag to search for")
     words = input()
+
     # print("Enter Date since The Tweets are required in yyyy-mm--dd")
     # date_since = input()
-    words += " -is:retweet"
-    print(words)
+
+    # words += " -is:retweet"
+
     # number of tweets you want to extract in one run
     numtweet = 100
     scrape(words, numtweet)
