@@ -104,7 +104,7 @@ def scrape(words, numtweet):
     filename = "scraped_tweets.csv"
 
     # we will save our database as a CSV file.
-    # db.to_csv(filename)
+    db.to_csv(filename)
 
 if __name__ == "__main__":
 
